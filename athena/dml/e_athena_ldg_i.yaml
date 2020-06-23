@@ -1,0 +1,5 @@
+service: athena
+method: create-named-query
+name: e_user_stg_i
+database: athena_ldb
+query-string: create table athena_stg.user as select cast(id as integer) as id from athena_ldg.user;

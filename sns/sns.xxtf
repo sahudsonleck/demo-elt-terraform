@@ -1,0 +1,13 @@
+
+provider "aws" {
+  region = var.region
+}
+
+resource "aws_sns_topic" "topic" {
+  display_name = "demosns" #"${local.display_name}"
+  name         = "demosns" # "${var.topic_name}"
+  
+    subscriptions = [
+    "+12066184394",
+  ]
+}

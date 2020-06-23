@@ -1,0 +1,2 @@
+db: Database=athena_ldg
+log: OutputLocation=s3://demo.athena.wrkdir

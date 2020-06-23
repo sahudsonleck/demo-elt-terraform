@@ -1,0 +1,7 @@
+service: athena
+method: create-named-query
+name: e_user_stg_d
+database: athena_stg
+query-string: drop table user;
+
+
