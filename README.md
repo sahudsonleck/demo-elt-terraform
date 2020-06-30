@@ -22,6 +22,8 @@ AWS
 
 ### Conceptual Model
 
+![Alt text](athena-glue-architecture.png)
+
 ### References 
 * Terraform 
 * Athena 
