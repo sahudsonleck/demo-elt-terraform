@@ -1,22 +1,22 @@
-#Module      : LABEL
+#Module      : SNS
 #Description : Terraform label module variables.
 
 variable "project" {
   default     = "demo"
   type        = string
-  description = "Name of project this VPC is meant to house"
+  description = "Name of project"
 }
 
 variable "environment" {
   default     = "poc"
   type        = string
-  description = "Name of environment this VPC is targeting"
+  description = "Name of environment"
 }
 
 variable "name" {
   default     = "demo-dataflow"
   type        = string
-  description = "Name of the VPC"
+  description = "Name of the data pipeline"
 }
 
 variable "region" {
@@ -28,55 +28,55 @@ variable "region" {
 variable "sns-topic-name" {
   type        = string
   default     = "demo-topic"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the sns topic for alert notifications"
 }
 
 variable "sqs-queue-name" {
   type        = string
   default     = "demo-queue"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the event queue used to trigger elt actions"
 }
 
 variable "s3-bucket-landing" {
   type        = string
   default     = "demo.ingress.landing"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the landing data repository"
 }
 
 variable "s3-bucket-staging" {
   type        = string
   default     = "demo.ingress.staging"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the staging data repository"
 }
 
 variable "s3-bucket-atomic" {
   type        = string
   default     = "demo.data.atomic"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the atomic S3 data store"
 }
 
 variable "s3-bucket-analyticts" {
   type        = string
   default     = "demo.data.analytics"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the analytics s3 data store"
 }
 
 variable "s3-bucket-athena-results" {
   type        = string
   default     = "demo.athena.wrkdir"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name for the athena working directory"
 }
 
 variable "s3-bucket-glue-results" {
   type        = string
   default     = "demo.glue.results"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the glue results directory"
 }
 
 variable "s3-bucket-glue-wrkdir" {
   type        = string
   default     = "demo.glue.wrkdir"
-  description = "Name  (e.g. `app` or `cluster`)."
+  description = "Name of the glue working directory"
 }
 
 

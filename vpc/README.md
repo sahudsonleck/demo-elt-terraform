@@ -1,7 +1,5 @@
 # terraform-aws-vpc
 
-[![CircleCI](https://circleci.com/gh/azavea/terraform-aws-vpc.svg?style=svg)](https://circleci.com/gh/azavea/terraform-aws-vpc)
-
 A Terraform module to create an Amazon Web Services (AWS) Virtual Private Cloud (VPC).
 
 ## Usage
@@ -29,12 +27,12 @@ module "vpc" {
   cidr_block = "10.0.0.0/16"
   private_subnet_cidr_blocks = ["10.0.1.0/24", "10.0.3.0/24"]
   public_subnet_cidr_blocks = ["10.0.0.0/24", "10.0.2.0/24"]
-  availability_zones = ["us-east-1a", "us-east-1b"]
+  availability_zones = ["us-west-1a", "us-west-1b"]
   bastion_ami = "ami-6869aa05"
   bastion_ebs_optimized = true
   bastion_instance_type = "t3.micro"
 
-  project = "Something"
+  project = "demo"
   environment = "Staging"
 }
 ```
