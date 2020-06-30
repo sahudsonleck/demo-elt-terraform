@@ -4,10 +4,10 @@
 Generate a set of event driven data pipelines to ingest data from xxxx and provide unified analtyics layer through Athena. 
 
 
-### Process flow 
+### Processes
 
-* Ingest data via lambda
-* Event driven processing using SNS & SQS
+* Ingest data via lambda & glue
+* Event driven processing & orchestration
 * Preprocessing and transformation in Athena and Glue 
 * Anlytics through Athena and Redshift & QuickSight
 * Insights & recommendations through SageMaker 
@@ -15,6 +15,9 @@ Generate a set of event driven data pipelines to ingest data from xxxx and provi
 
 ## Requirements
 
+* Terraform
+* AWS Account 
+* API Developer Tokens
 
 ## Providers
 
@@ -24,9 +27,7 @@ AWS
 
 ![Alt text](athena-glue-architecture.png)
 
-### References 
-## Terraform 
-Terraform
+#Terraform
 =========
 
 - Website: https://www.terraform.io
@@ -57,13 +58,13 @@ Athena is easy to use. Simply point to your data in Amazon S3, define the schema
 
 Athena is out-of-the-box integrated with AWS Glue Data Catalog, allowing you to create a unified metadata repository across various services, crawl data sources to discover schemas and populate your Catalog with new and modified table and partition definitions, and maintain schema versioning.
 
-https://aws.amazon.com/athena/?whats-new-cards.sort-by=item.additionalFields.postDateTime&whats-new-cards.sort-order=desc
+[AWS Athena](https://aws.amazon.com/athena/?whats-new-cards.sort-by=item.additionalFields.postDateTime&whats-new-cards.sort-order=desc)
 
 # Glue 
 
 AWS Glue is a fully managed extract, transform, and load (ETL) service that makes it easy for customers to prepare and load their data for analytics. You can create and run an ETL job with a few clicks in the AWS Management Console. You simply point AWS Glue to your data stored on AWS, and AWS Glue discovers your data and stores the associated metadata (e.g. table definition and schema) in the AWS Glue Data Catalog. Once cataloged, your data is immediately searchable, queryable, and available for ETL.
 
-https://aws.amazon.com/glue/?whats-new-cards.sort-by=item.additionalFields.postDateTime&whats-new-cards.sort-order=desc
+[AWS Glue](https://aws.amazon.com/glue/?whats-new-cards.sort-by=item.additionalFields.postDateTime&whats-new-cards.sort-order=desc)
 
 ## Discovery
 
@@ -71,4 +72,10 @@ AWS Glue users. A crawler can crawl multiple data stores in a single run. Upon c
 
 # QuickSight
 
+Amazon QuickSight is a fast, cloud-powered business intelligence service that makes it easy to deliver insights to everyone in your organization.
 
+As a fully managed service, QuickSight lets you easily create and publish interactive dashboards that include ML Insights. Dashboards can then be accessed from any device, and embedded into your applications, portals, and websites.
+
+With our Pay-per-Session pricing, QuickSight allows you to give everyone access to the data they need, while only paying for what you use.
+
+[AWS QuickSight](https://aws.amazon.com/quicksight/)
