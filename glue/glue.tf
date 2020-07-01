@@ -1,26 +1,207 @@
-resource "aws_glue_job" "gj_elt" {
-	glue_version 		= "1"
-	name 				= "job-name"
-	description 		= "job-desc"
-	role_arn 			= data.aws_iam_role.arn
-	max_capacity 		= 1
-	max_retries 		= 2
-	connections 		= [aws_glue_connection.connection.name]
-	timeout 			= 20
-	
-	command {
-	name 			= "pythonshell"
-	script_location = "s3://bucket/script.py"
-	python_version 	= "3"
-	}
-	
-	default_arguments  ={
-	"--job-language"	= "python"
-	"--ENV"				= "env"
-	"--ROLE_ARN"		= data.aws_iam_role.aws_glue_iam_role.arn
-	}
+##https://github.com/sahudsonleck/terraform-aws-controlshift-redshift-sync/blob/main/glue_job.tf
 
-	execution_property {
+
+resource "aws_glue_catalog_database" "catalog_db" {
+  name = "controlshift_${var.controlshift_environment}"
+}
+
+#############
+# Signatures
+#>>>>>>>>>>>PENDING
+#############
+locals {
+  signatures_s3_path = "s3://service-glue-repo-${var.environment}/${var.organization}/signatures"
+}
+
+
+data "template_file" "signatures_script" {
+  template = file("${path.module}/templates/signatures_job.py.tpl")
+  vars = {
+    catalog_database_name = aws_glue_catalog_database.catalog_db.name
+    redshift_database_name = var.redshift_database_name
+    redshift_connection_name = aws_glue_connection.redshift_connection.name
+  }
+}
+
+resource "aws_iam_role" "glue_service_role" {
+  name = "AWSGlueServiceRole"
+  description = "Used by the AWS Glue jobs to insert data into redshift"
+  assume_role_policy = data.aws_iam_policy_document.glue_assume_role.json
+}
+
+data "aws_iam_policy_document" "glue_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type = "Service"
+      identifiers = ["glue.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "glue_resources" {
+  role       = aws_iam_role.glue_service_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
+resource "aws_iam_role_policy" "controlshift_data_export_bucket_access" {
+  name = "AllowsCrossAccountAccessToControlShiftDataExportBucket"
+  role = aws_iam_role.glue_service_role.id
+  policy = data.aws_iam_policy_document.controlshift_data_export_bucket.json
+}
+
+data "aws_iam_policy_document" "controlshift_data_export_bucket" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:GetBucketLocation",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::agra-data-exports-${var.controlshift_environment}/${var.controlshift_organization_slug}/*"
+    ]
+  }
+}
+
+#data "aws_subnet" "redshift_subnet" {
+#  id = var.redshift_subnet_id
+#}
+
+resource "aws_glue_connection" "redshift_connection" {
+  name = "controlshift_${var.controlshift_environment}_data_sync"
+
+  connection_properties = {
+    JDBC_CONNECTION_URL = "jdbc:redshift://${data.aws_redshift_cluster.sync_data_target.endpoint}:${data.aws_redshift_cluster.sync_data_target.port}/${var.redshift_database_name}"
+    PASSWORD            = var.redshift_password
+    USERNAME            = var.redshift_username
+    JDBC_ENFORCE_SSL    = false
+  }
+
+  physical_connection_requirements {
+    availability_zone      = data.aws_subnet.redshift_subnet.availability_zone
+    security_group_id_list = [ var.redshift_security_group_id ]
+    subnet_id              = data.aws_subnet.redshift_subnet.id
+  }
+}
+
+resource "aws_glue_job" "signatures_full" {
+  name = "cs-${var.controlshift_environment}-signatures-full"
+  connections = [ aws_glue_connection.redshift_connection.name ]
+  glue_version = "1.0"
+  default_arguments = {
+    "--TempDir": "s3://${aws_s3_bucket.glue_resources.bucket}/${var.controlshift_environment}/temp",
+    "--job-bookmark-option": "job-bookmark-disable",
+    "--job-language": "python"
+  }
+
+  role_arn = aws_iam_role.glue_service_role.arn
+
+  command {
+    script_location = "s3://${aws_s3_bucket.glue_resources.bucket}/${var.controlshift_environment}/signatures_job.py"
+    python_version = "3"
+  }
+}
+
+
+resource "aws_sns_topic" "glue_job_success" {
+  depends_on = [ aws_glue_job.signatures_full ]
+  name = var.success_topic_name_for_run_glue_job_lambda
+  policy = data.aws_iam_policy_document.sns_notification_policy_for_successful_run_glue_job.json
+}
+
+data "aws_iam_policy_document" "sns_notification_policy_for_successful_run_glue_job" {
+  statement {
+    effect = "Allow"
+    principals {
+      type = "Service"
+      identifiers = [ "events.amazonaws.com" ]
+    }
+    actions = [
+      "SNS:Publish"
+    ]
+    resources = [
+      "arn:aws:sns:*:*:${var.success_topic_name_for_run_glue_job_lambda}"
+    ]
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "successful_glue_job_run" {
+  name        = "successful-glue-job-run"
+  description = "Glue Job finished successfully"
+
+  event_pattern = <<PATTERN
+{
+  "source": [
+    "aws.glue"
+  ],
+  "detail-type": [
+    "Glue Job State Change"
+  ],
+  "detail": {
+    "state": [
+      "SUCCEEDED"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "notify_successful_glue_job" {
+  rule      = aws_cloudwatch_event_rule.successful_glue_job_run.name
+  target_id = "notify-successful-glue-job-run"
+  arn       = aws_sns_topic.glue_job_success.arn
+}
+
+resource "aws_sns_topic" "glue_job_failure" {
+  depends_on = [ aws_glue_job.signatures_full ]
+  name = var.failure_topic_name_for_run_glue_job_lambda
+  policy = data.aws_iam_policy_document.sns_notification_policy_for_failed_run_glue_job.json
+}
+
+data "aws_iam_policy_document" "sns_notification_policy_for_failed_run_glue_job" {
+  statement {
+    effect = "Allow"
+    principals {
+      type = "Service"
+      identifiers = [ "events.amazonaws.com" ]
+    }
+    actions = [
+      "SNS:Publish"
+    ]
+    resources = [
+      "arn:aws:sns:*:*:${var.failure_topic_name_for_run_glue_job_lambda}"
+    ]
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "failed_glue_job_run" {
+  name        = "failed-glue-job-run"
+  description = "Glue Job finished with failure"
+
+  event_pattern = <<PATTERN
+{
+  "source": [
+    "aws.glue"
+  ],
+  "detail-type": [
+    "Glue Job State Change"
+  ],
+  "detail": {
+    "state": [
+      "FAILED", "TIMEOUT"
+    ]
+  }
+}
+PATTERN
+}
+
+resource "aws_cloudwatch_event_target" "notify_failed_glue_job" {
+  rule      = aws_cloudwatch_event_rule.failed_glue_job_run.name
+  target_id = "notify-failed-glue-job-run"
+  arn       = aws_sns_topic.glue_job_failure.arn
+}execution_property {
 	max_concurrent_runs = 1
 	}
 }
